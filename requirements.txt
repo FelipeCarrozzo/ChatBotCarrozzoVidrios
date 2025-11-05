@@ -1,4 +1,5 @@
 numpy
-pandas
+pandas>=2.0
 camelot-py[pdf]
 tabula-py
+pytest>=8.0
