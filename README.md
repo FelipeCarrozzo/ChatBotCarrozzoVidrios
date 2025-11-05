@@ -10,6 +10,39 @@ Para lograrlo, el proyecto se estructura en dos partes principales:
 
 2. Interfaz conversacional: A través de Telegram, el usuario puede interactuar con el chatbot mediante comandos simples como /buscar, especificando categoría, marca, modelo y año del vehículo. Node-RED procesa la consulta, filtra los datos del catálogo y devuelve la información correspondiente — incluyendo precio, categoría y disponibilidad — de manera clara y rápida.
 
+## Cómo ejecutar `limpiar_catalogo.py`
+
+El script `limpiar_catalogo.py` convierte un catálogo PDF en un JSON limpio. Para probarlo con tu propio archivo PDF sigue estos pasos:
+
+1. **Prepara el entorno de Python** (opcional pero recomendado):
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # En Windows usa: .venv\Scripts\activate
+   pip install pandas numpy camelot-py[cv] tabula-py
+   ```
+
+   > **Nota:** Camelot requiere tener instalado Ghostscript y, si usas `tabula-py`, necesitas Java.
+
+2. **Ejecuta el script indicando la ruta del PDF** (y opcionalmente los parámetros disponibles):
+
+   ```bash
+   python limpiar_catalogo.py ruta/al/catalogo.pdf \
+       --mapeo data/mapeo_columnas.json \
+       --salida data/catalogo.json \
+       --log-extraccion logs/extraccion.log \
+       --log-validacion logs/validacion.log
+   ```
+
+   - `--mapeo` es opcional y permite indicar un JSON con el mapeo de nombres de columnas personalizados.
+   - `--salida` define el archivo JSON generado (por defecto `data/catalogo.json`).
+   - `--log-extraccion` y `--log-validacion` especifican dónde se guardan los registros.
+
+3. **Revisa los resultados:**
+
+   - El JSON limpio estará en la ruta indicada en `--salida`.
+   - Los archivos de log detallan el proceso de extracción y validación.
+
 El sistema está diseñado con un enfoque modular, escalable y automatizable, permitiendo:
 
 - Integrar nuevas categorías de productos sin modificar la lógica base.

@@ -78,7 +78,15 @@ def load_mapping(mapping_path: Optional[Path]) -> Dict[str, str]:
     with mapping_path.open("r", encoding="utf-8") as fh:
         mapping_data = json.load(fh)
 
-    return {key.strip().upper(): value.strip().lower() for key, value in mapping_data.items()}
+    normalized_mapping: Dict[str, str] = {}
+    for raw_key, raw_value in mapping_data.items():
+        key_text = str(raw_key).strip().upper()
+        value_text = str(raw_value).strip().lower()
+        if not key_text or not value_text:
+            continue
+        normalized_mapping[key_text] = value_text
+
+    return normalized_mapping
 
 
 def extract_tables(pdf_path: Path, extraction_logger: logging.Logger) -> ExtractionResult:
@@ -156,7 +164,9 @@ def normalize_columns(df: pd.DataFrame, mapping: Dict[str, str]) -> pd.DataFrame
     merged_mapping = {**default_mapping, **mapping}
 
     for column in df.columns:
-        normalized = merged_mapping.get(column.strip().upper(), column.strip().lower())
+        column_text = str(column)
+        stripped = column_text.strip()
+        normalized = merged_mapping.get(stripped.upper(), stripped.lower())
         normalized_columns[column] = normalized
 
     df.rename(columns=normalized_columns, inplace=True)
@@ -252,8 +262,11 @@ def enrich_hierarchy(df: pd.DataFrame) -> pd.DataFrame:
     for index, row in df.iterrows():
         texto = _row_text(row, reference_columns)
         es_precio = any(
-            isinstance(row.get(col), (int, float))
-            or (isinstance(row.get(col), str) and re.search(r"\d", row.get(col)))
+            (
+                isinstance(valor := row.get(col), (int, float))
+                and not pd.isna(valor)
+            )
+            or (isinstance(valor, str) and re.search(r"\d", valor))
             for col in ["precio", "codigo"]
             if col in df.columns
         )
