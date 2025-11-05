@@ -252,8 +252,11 @@ def enrich_hierarchy(df: pd.DataFrame) -> pd.DataFrame:
     for index, row in df.iterrows():
         texto = _row_text(row, reference_columns)
         es_precio = any(
-            isinstance(row.get(col), (int, float))
-            or (isinstance(row.get(col), str) and re.search(r"\d", row.get(col)))
+            (
+                isinstance(valor := row.get(col), (int, float))
+                and not pd.isna(valor)
+            )
+            or (isinstance(valor, str) and re.search(r"\d", valor))
             for col in ["precio", "codigo"]
             if col in df.columns
         )
