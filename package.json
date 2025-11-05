@@ -1,0 +1,12 @@
+{
+    "name": "ChatBotCarrozzoVidrios",
+    "description": "Este proyecto consiste en el desarrollo de un chatbot inteligente en Telegram, integrado con Node-RED, que permite agilizar la búsqueda de precios y disponibilidad de cristales automotrices (parabrisas, lunetas, ventanillas, etc.) dentro de un catálogo extenso de productos.",
+    "version": "0.0.1",
+    "dependencies": {},
+    "node-red": {
+        "settings": {
+            "flowFile": "flows.json",
+            "credentialsFile": "flows_cred.json"
+        }
+    }
+}
