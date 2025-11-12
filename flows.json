@@ -1,1 +1,453 @@
-[]
+[
+    {
+        "id": "6d76aee88f994823",
+        "type": "tab",
+        "label": "Flujo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "8df5c20dddca9d11",
+        "type": "telegram bot",
+        "botname": "CarrozzoVidriosBot",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "99e7d99b9badbf41",
+        "type": "debug",
+        "z": "6d76aee88f994823",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "3f1899752c19b369",
+        "type": "telegram receiver",
+        "z": "6d76aee88f994823",
+        "name": "",
+        "bot": "8df5c20dddca9d11",
+        "saveDataDir": "",
+        "filterCommands": false,
+        "x": 130,
+        "y": 580,
+        "wires": [
+            [
+                "99e7d99b9badbf41",
+                "9ce3d5bb0df5ab47"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "465d09dcd6d5f35c",
+        "type": "inject",
+        "z": "6d76aee88f994823",
+        "name": "cargar catalogo",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 180,
+        "wires": [
+            [
+                "945c4abf6133db9f"
+            ]
+        ]
+    },
+    {
+        "id": "945c4abf6133db9f",
+        "type": "file in",
+        "z": "6d76aee88f994823",
+        "name": "datos .json",
+        "filename": "C:/Users/usr/.node-red/projects/ChatBotCarrozzoVidrios/data/output/pilkington.json",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 430,
+        "y": 200,
+        "wires": [
+            [
+                "fa3fac8d3fb23bda"
+            ]
+        ]
+    },
+    {
+        "id": "fa3fac8d3fb23bda",
+        "type": "json",
+        "z": "6d76aee88f994823",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 610,
+        "y": 200,
+        "wires": [
+            [
+                "731867f6d2d279b8"
+            ]
+        ]
+    },
+    {
+        "id": "731867f6d2d279b8",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "set_global_catalog",
+        "func": "// Espera que msg.payload sea un array de objetos del catálogo\nconst catalog = msg.payload;\n\n// Guardamos el catálogo completo en la variable global\nglobal.set(\"catalog\", catalog);\n\n// Opcional: mostrar cuántos productos se cargaron\nnode.status({fill:\"green\", shape:\"dot\", text:`${catalog.length} productos cargados`});\n\n// No necesitamos que este mensaje siga hacia otros nodos\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 200,
+        "wires": [
+            [
+                "4b352af281ffb68a",
+                "b6be091188b8e890"
+            ]
+        ]
+    },
+    {
+        "id": "4b352af281ffb68a",
+        "type": "debug",
+        "z": "6d76aee88f994823",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "b6be091188b8e890",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "extraer marcas y modelos",
+        "func": "// Obtenemos el catálogo que ya cargamos\nconst catalog = global.get(\"catalog\") || [];\n\n// Función para normalizar texto (sin tildes, minúsculas, sin espacios extra)\nconst normalize = s => (s ?? \"\")\n  .toString()\n  .toLowerCase()\n  .normalize(\"NFD\")\n  .replace(/[\\u0300-\\u036f]/g, \"\") // quita acentos\n  .replace(/\\s+/g, \" \")\n  .trim();\n\n// 1️⃣ Lista de marcas únicas\nconst marcas = [...new Set(catalog.map(item => normalize(item.marca)))].filter(Boolean);\n\n// 2️⃣ Lista de modelos por marca\nconst modelosPorMarca = {};\nfor (const item of catalog) {\n  const marca = normalize(item.marca);\n  const modelo = normalize(item.modelo);\n  if (!marca || !modelo) continue;\n  if (!modelosPorMarca[marca]) modelosPorMarca[marca] = new Set();\n  modelosPorMarca[marca].add(modelo);\n}\n\n// Convertimos los Sets a arrays normales\nfor (const marca in modelosPorMarca) {\n  modelosPorMarca[marca] = Array.from(modelosPorMarca[marca]);\n}\n\n// Guardamos en variables globales\nglobal.set(\"marcas_unicas\", marcas);\nglobal.set(\"modelos_por_marca\", modelosPorMarca);\n\nnode.status({fill:\"blue\", shape:\"dot\", text:`${marcas.length} marcas cargadas`});\nmsg.payload = marcas;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 990,
+        "y": 320,
+        "wires": [
+            [
+                "0c5521db7efc2f6e"
+            ]
+        ]
+    },
+    {
+        "id": "fcc73b7a4c91ae23",
+        "type": "inject",
+        "z": "6d76aee88f994823",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 710,
+        "y": 320,
+        "wires": [
+            [
+                "b6be091188b8e890"
+            ]
+        ]
+    },
+    {
+        "id": "0c5521db7efc2f6e",
+        "type": "debug",
+        "z": "6d76aee88f994823",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1240,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "c8423aeb93ef2a9a",
+        "type": "telegram sender",
+        "z": "6d76aee88f994823",
+        "name": "",
+        "bot": "8df5c20dddca9d11",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1090,
+        "y": 620,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d16fdcf0d9f4353c",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "pedir modelo",
+        "func": "const text = (msg.payload.content || \"\").toString().trim().toLowerCase();\nconst chatId = msg.payload.chatId;\nif (!chatId) return null;\n\n// Recuperamos el estado actual del usuario\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\nif (estado.paso === \"marca\") {\n\n    const marcas = global.get(\"marcas_unicas\") || [];\n    const modelosPorMarca = global.get(\"modelos_por_marca\") || {};\n\n    // Buscamos si la marca ingresada coincide\n    const marcaElegida = marcas.find(m => m === text || m.startsWith(text));\n    if (!marcaElegida) {\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: \"❌ No reconozco esa marca. Escribí /start para volver a empezar.\"\n        };\n        return msg;\n    }\n\n    // Guardamos la marca y pasamos al siguiente paso\n    estado.marca = marcaElegida;\n    estado.paso = \"modelo\";\n    flow.set(`estado_${chatId}`, estado);\n\n    // Buscamos modelos disponibles para esa marca\n    const modelos = modelosPorMarca[marcaElegida] || [];\n    const primeras = modelos.slice(0, 8);\n    const keyboard = [\n        primeras.slice(0, 4).map(m => m.toUpperCase()),\n        primeras.slice(4, 8).map(m => m.toUpperCase())\n    ];\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: `Perfecto ✅\\nElegiste *${marcaElegida.toUpperCase()}*.\\n\\nAhora decime el *modelo* del vehículo:`,\n        options: {\n            parse_mode: \"Markdown\",\n            reply_markup: {\n                keyboard: keyboard,\n                one_time_keyboard: true,\n                resize_keyboard: true\n            }\n        }\n    };\n\n    return msg;\n}\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 640,
+        "wires": [
+            [
+                "c8423aeb93ef2a9a"
+            ]
+        ]
+    },
+    {
+        "id": "d149d98720ea052c",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "pedir cristal",
+        "func": "const text = (msg.payload.content || \"\").toString().trim().toLowerCase();\nconst chatId = msg.payload.chatId;\nif (!chatId) return null;\n\n// Recuperar el estado del usuario\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n// Si está en el paso \"modelo\"\nif (estado.paso === \"modelo\") {\n\n    const modelosPorMarca = global.get(\"modelos_por_marca\") || {};\n    const marca = estado.marca;\n    const modelos = modelosPorMarca[marca] || [];\n\n    // Buscar coincidencia con el modelo ingresado\n    const modeloElegido = modelos.find(m => m === text || m.startsWith(text));\n    if (!modeloElegido) {\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `❌ No reconozco ese modelo para *${marca.toUpperCase()}*.\\nProbá escribirlo de nuevo o enviá /start para comenzar otra vez.`,\n            options: { parse_mode: \"Markdown\" }\n        };\n        return msg;\n    }\n\n    // Guardar el modelo\n    estado.modelo = modeloElegido;\n    estado.paso = \"cristal\";\n    flow.set(`estado_${chatId}`, estado);\n\n    // Buscar tipos de cristal en el catálogo\n    const catalog = global.get(\"catalog\") || [];\n    const normalize = s => (s ?? \"\").toString().toLowerCase().normalize(\"NFD\")\n        .replace(/[\\u0300-\\u036f]/g, \"\").replace(/\\s+/g, \" \").trim();\n    const cristales = [...new Set(\n        catalog\n            .filter(x => normalize(x.marca) === marca && normalize(x.modelo) === modeloElegido)\n            .map(x => normalize(x.cristal))\n    )];\n\n    // Crear teclado\n    const primeros = cristales.slice(0, 6);\n    const keyboard = [\n        primeros.slice(0, 3).map(c => c.toUpperCase()),\n        primeros.slice(3, 6).map(c => c.toUpperCase())\n    ];\n\n    // Mensaje de siguiente paso\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: `Perfecto ✅\\nElegiste *${marca.toUpperCase()} ${modeloElegido.toUpperCase()}*.\\n\\nAhora decime qué *cristal* buscás (por ejemplo: Parabrisas, Puerta, Luneta):`,\n        options: {\n            parse_mode: \"Markdown\",\n            reply_markup: {\n                keyboard: keyboard,\n                one_time_keyboard: true,\n                resize_keyboard: true\n            }\n        }\n    };\n\n    return msg;\n}\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 680,
+        "wires": [
+            [
+                "c8423aeb93ef2a9a"
+            ]
+        ]
+    },
+    {
+        "id": "25f95448ecd1a39c",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "buscar precios",
+        "func": "const text = (msg.payload.content || \"\").toString().trim().toLowerCase();\nconst chatId = msg.payload.chatId;\nif (!chatId) return null;\n\n// Recuperar estado del usuario\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n// Si está en el paso \"cristal\"\nif (estado.paso === \"cristal\") {\n\n    const marca = estado.marca;\n    const modelo = estado.modelo;\n    const cristalIngresado = text;\n\n    // Normalizar texto para comparar\n    const normalize = s => (s ?? \"\").toString().toLowerCase()\n        .normalize(\"NFD\")\n        .replace(/[\\u0300-\\u036f]/g, \"\")\n        .replace(/\\s+/g, \" \")\n        .trim();\n\n    const catalog = global.get(\"catalog\") || [];\n\n    // Filtrar coincidencias\n    const resultados = catalog.filter(item => {\n        return (\n            normalize(item.marca) === marca &&\n            normalize(item.modelo) === modelo &&\n            normalize(item.cristal).startsWith(cristalIngresado)\n        );\n    });\n\n    if (!resultados.length) {\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `❌ No encontré precios para *${marca.toUpperCase()} ${modelo.toUpperCase()}* (${cristalIngresado}).\\nProbá otra pieza o enviá /start para comenzar de nuevo.`,\n            options: { parse_mode: \"Markdown\" }\n        };\n        return msg;\n    }\n\n    // Formatear resultados\n    const fmt = v => {\n        if (v === undefined || v === null) return \"-\";\n        let s = v.toString().trim();\n        if (!s.startsWith(\"$\")) s = \"$\" + s;\n        return s;\n    };\n\n    const respuesta = resultados.slice(0, 5).map((r, i) => {\n        const precio = fmt(r[\"total s/iva\"] ?? r[\"precio s/iva\"] ?? r[\"precio\"]);\n        return `#${i + 1} – ${r.descripción ?? r.cristal}\\nCódigo: ${r.código ?? \"-\"}\\nColor: ${r.color ?? \"-\"}\\n💵 Precio: ${precio}`;\n    }).join(\"\\n\\n\");\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: `🔍 *Resultados para ${marca.toUpperCase()} ${modelo.toUpperCase()} (${cristalIngresado.toUpperCase()})*\\n\\n${respuesta}\\n\\nUsá /start para hacer otra consulta.`,\n        options: { parse_mode: \"Markdown\" }\n    };\n\n    // Reiniciar la sesión para que pueda empezar otra consulta\n    flow.set(`estado_${chatId}`, { paso: null });\n    return msg;\n}\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 720,
+        "wires": [
+            [
+                "c8423aeb93ef2a9a"
+            ]
+        ]
+    },
+    {
+        "id": "9ce3d5bb0df5ab47",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "router inputs",
+        "func": "const text = (msg.payload.content || \"\").toString().trim().toLowerCase();\nconst chatId = msg.payload.chatId;\n\nif (!chatId) return null;\n\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n// Detectar comandos\nif (text.startsWith(\"/start\") || text.startsWith(\"/help\") || text.startsWith(\"/cancel\")) {\n    msg.meta = { tipo: \"comando\", comando: text.replace(\"/\", \"\") };\n    return [msg, null]; // salida 1 = comandos\n}\n\n// Mensajes normales\nmsg.meta = { tipo: \"mensaje\", paso: estado.paso };\nreturn [null, msg]; // salida 2 = mensajes normales\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 620,
+        "wires": [
+            [
+                "82c275f0d94cc151"
+            ],
+            [
+                "88f1d6b3578b6dde",
+                "3da87555ec18b64c"
+            ]
+        ]
+    },
+    {
+        "id": "88f1d6b3578b6dde",
+        "type": "switch",
+        "z": "6d76aee88f994823",
+        "name": "orquestador",
+        "property": "meta.paso",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "\"marca\"",
+                "vt": "msg"
+            },
+            {
+                "t": "eq",
+                "v": "\"modelo\"",
+                "vt": "msg"
+            },
+            {
+                "t": "eq",
+                "v": "\"cristal\"",
+                "vt": "msg"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 3,
+        "x": 590,
+        "y": 680,
+        "wires": [
+            [
+                "d16fdcf0d9f4353c",
+                "b6dd68a979d7c577"
+            ],
+            [
+                "d149d98720ea052c"
+            ],
+            [
+                "25f95448ecd1a39c"
+            ]
+        ]
+    },
+    {
+        "id": "82c275f0d94cc151",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "gestor comandos",
+        "func": "const cmd = msg.meta?.comando;\nconst chatId = msg.payload.chatId;\n\nif (cmd === \"start\") {\n    // 🔹 Reiniciar estado del usuario\n    flow.set(`estado_${chatId}`, { paso: \"marca\" });\n\n    const marcas = global.get(\"marcas_unicas\") || [];\n    const primeras = marcas.slice(0, 8);\n    const keyboard = [\n        primeras.slice(0, 4).map(m => m.toUpperCase()),\n        primeras.slice(4, 8).map(m => m.toUpperCase())\n    ];\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: \"👋 ¡Hola! Soy tu asistente de precios.\\n\\nDecime la *marca* del vehículo:\",\n        options: {\n            parse_mode: \"Markdown\",\n            reply_markup: {\n                keyboard: keyboard,\n                one_time_keyboard: true,\n                resize_keyboard: true\n            }\n        }\n    };\n\n    return msg;\n}\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 560,
+        "wires": [
+            [
+                "c8423aeb93ef2a9a",
+                "d1f027f5113639ed"
+            ]
+        ]
+    },
+    {
+        "id": "d1f027f5113639ed",
+        "type": "debug",
+        "z": "6d76aee88f994823",
+        "name": "debug C COMANDOS",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1010,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "3da87555ec18b64c",
+        "type": "debug",
+        "z": "6d76aee88f994823",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "b6dd68a979d7c577",
+        "type": "debug",
+        "z": "6d76aee88f994823",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 820,
+        "wires": []
+    }
+]
