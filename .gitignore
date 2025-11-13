@@ -1,3 +1,4 @@
 *.backup
 *__pycache__/
 *./scripts/README.md/
+archive/
