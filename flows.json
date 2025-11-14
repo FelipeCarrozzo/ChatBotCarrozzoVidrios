@@ -8,6 +8,39 @@
         "env": []
     },
     {
+        "id": "subflow_normalizar",
+        "type": "subflow",
+        "name": "SF - Normalizar Texto",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 80,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "sf_norm_fn"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 340,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "sf_norm_fn",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
         "id": "8df5c20dddca9d11",
         "type": "telegram bot",
         "botname": "CarrozzoVidriosBot",
@@ -33,6 +66,36 @@
         "useselfsignedcertificate": false,
         "sslterminated": false,
         "verboselogging": false
+    },
+    {
+        "id": "093945d6cbd08c1b",
+        "type": "global-config",
+        "env": [
+            {
+                "name": "TELEGRAM_TOKEN",
+                "value": "8557107744:AAGHP-WZ03RUbx2aGuc11z_CAefbXIcCves",
+                "type": "str"
+            }
+        ],
+        "modules": {}
+    },
+    {
+        "id": "sf_norm_fn",
+        "type": "function",
+        "z": "subflow_normalizar",
+        "name": "normalizar",
+        "func": "let s = (msg.text_original ?? '').toString();\nmsg.payload = s.toUpperCase()\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 210,
+        "y": 80,
+        "wires": [
+            []
+        ]
     },
     {
         "id": "99e7d99b9badbf41",
@@ -138,8 +201,8 @@
         "id": "731867f6d2d279b8",
         "type": "function",
         "z": "6d76aee88f994823",
-        "name": "catalogo v_global",
-        "func": "//msg.payload sea un array de objetos del catálogo\nconst catalog = msg.payload;\n\n//guardo el catálogo completo en la variable global\nglobal.set(\"catalog\", catalog);\n\n//mostrar cuántos productos se cargaron\nnode.status({fill:\"green\", shape:\"dot\", text:`${catalog.length} productos cargados`});\n\nreturn null;\n",
+        "name": "catalogo Pilkington",
+        "func": "//msg.payload sea un array de objetos del catálogo\nconst catalog = msg.payload;\n\n//guardo el catálogo completo en la variable global\nglobal.set(\"catalogo.productos\", catalog);\n\n//mostrar cuántos productos se cargaron\nnode.status({fill:\"green\", shape:\"dot\", text:`${catalog.length} productos cargados`});\n\nreturn null;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -159,7 +222,7 @@
         "type": "function",
         "z": "6d76aee88f994823",
         "name": "extraer marcas y modelos",
-        "func": "//catálogo ya cargado\nconst catalog = global.get(\"catalog\") || [];\n\n//normalizar texto\nconst normalize = s => (s ?? \"\")\n  .toString()\n  .toUpperCase()\n  .normalize(\"NFD\")\n  .replace(/[\\u0300-\\u036f]/g, \"\")\n  .replace(/\\s+/g, \" \")\n  .trim();\n\n//lista de marcas únicas\nconst marcas = [...new Set(catalog.map(item => normalize(item.marca)))].filter(Boolean);\n\n//lista de modelos por marca\nconst modelosPorMarca = {};\nfor (const item of catalog) {\n  const marca = normalize(item.marca);\n  const modelo = normalize(item.modelo);\n  if (!marca || !modelo) continue;\n  if (!modelosPorMarca[marca]) modelosPorMarca[marca] = new Set();\n  modelosPorMarca[marca].add(modelo);\n}\n\n//convierto sets a arrays normales\nfor (const marca in modelosPorMarca) {\n  modelosPorMarca[marca] = Array.from(modelosPorMarca[marca]);\n}\n\n//guardo en variables globales\nglobal.set(\"marcas_unicas\", marcas);\nglobal.set(\"modelos_por_marca\", modelosPorMarca);\n\nnode.status({fill:\"blue\", shape:\"dot\", text:`${marcas.length} marcas cargadas`});\nmsg.payload = modelosPorMarca;\n\nreturn msg;\n",
+        "func": "try {\n\n  //verificar que el catálogo exista\n  const catalog = global.get(\"catalogo.productos\");\n\n  if (!catalog) {\n    node.error(\"El catálogo global 'catalogo.productos' no existe\", msg);\n    msg.payload = { error: true, detail: \"No se encontró el catálogo cargado.\" };\n    return msg;\n  }\n\n  if (!Array.isArray(catalog)) {\n    node.error(\"El catálogo no es un array\", msg);\n    msg.payload = { error: true, detail: \"El catálogo tiene un formato inválido.\" };\n    return msg;\n  }\n\n  if (catalog.length === 0) {\n    node.error(\"El catálogo está vacío\", msg);\n    msg.payload = { error: true, detail: \"El catálogo no contiene productos.\" };\n    return msg;\n  }\n\n\n  //normalizador defensivo\n  const normalize = s => (s ?? \"\")\n    .toString()\n    .toUpperCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n\n  //extraer marcas deduplicadas (con validación)\n  const marcas = [...new Set(\n    catalog.map(item => {\n      if (!item?.marca) {\n        node.error(`Producto sin marca detectado: ${JSON.stringify(item)}`, msg);\n        return null;\n      }\n      return normalize(item.marca);\n    })\n  )].filter(Boolean);\n\n\n  //construir modelos por marca\n  const modelos = {};\n\n  for (const item of catalog) {\n    const marca = normalize(item.marca);\n    const modelo = normalize(item.modelo);\n\n    if (!marca || !modelo) {\n      node.error(`Entrada inválida detectada: marca=\"${item.marca}\", modelo=\"${item.modelo}\"`, msg);\n      continue;\n    }\n\n    if (!modelos[marca]) modelos[marca] = new Set();\n    modelos[marca].add(modelo);\n  }\n\n  //convertir sets en arrays\n  for (const marca in modelos) {\n    modelos[marca] = Array.from(modelos[marca]);\n  }\n\n\n  //guardar en variables globales\n  global.set(\"catalogo.marcas\", marcas);\n  global.set(\"catalogo.modelos\", modelos);\n\n  node.status({ fill: \"blue\", shape: \"dot\", text: `${marcas.length} marcas cargadas` });\n  msg.payload = modelos;\n\n  return msg;\n\n\n} catch (err) {\n\n  //error inesperado\n  node.error(`Error inesperado en extracción de marcas/modelos: ${err.message}`, msg);\n\n  msg.payload = {\n    error: true,\n    detail: \"Ocurrió un error inesperado procesando el catálogo.\",\n    systemMessage: err.message\n  };\n\n  return msg;\n}\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -216,8 +279,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1170,
-        "y": 340,
+        "x": 1350,
+        "y": 240,
         "wires": []
     },
     {
@@ -228,8 +291,8 @@
         "bot": "8df5c20dddca9d11",
         "haserroroutput": false,
         "outputs": 1,
-        "x": 1170,
-        "y": 660,
+        "x": 1550,
+        "y": 680,
         "wires": [
             []
         ]
@@ -239,15 +302,15 @@
         "type": "function",
         "z": "6d76aee88f994823",
         "name": "pedir modelo",
-        "func": "const text = (msg.payload.content || \"\").toString().trim().toLowerCase();\nconst chatId = msg.payload.chatId;\nif (!chatId) return null;\n\n//recuperar el estado actual del usuario\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\nif (estado.paso === \"marca\") {\n\n    const marcas = global.get(\"marcas_unicas\") || [];\n    const modelosPorMarca = global.get(\"modelos_por_marca\") || {};\n\n    //verifico si la marca ingresada coincide\n    const marcaElegida = marcas.find(m => m.toUpperCase() === text || m.toLowerCase().startsWith(text));\n    if (!marcaElegida) {\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: \"❌ No reconozco esa marca. Escribí /start para volver a empezar.\"\n        };\n        return msg;\n    }\n\n    //guardo la marca y estado\n    estado.marca = marcaElegida;\n    estado.paso = \"modelo\";\n    flow.set(`estado_${chatId}`, estado);\n\n    //busco modelos disponibles para esa marca\n    const modelos = modelosPorMarca[marcaElegida] || [];\n    const primeras = modelos.slice(0, 8);\n    const keyboard = [\n        primeras.slice(0, 4).map(m => m.toUpperCase()),\n        primeras.slice(4, 8).map(m => m.toUpperCase())\n    ];\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: `Perfecto ✅\\nElegiste *${marcaElegida.toUpperCase()}*.\\n\\nAhora decime el *modelo* del vehículo:`,\n        options: {\n            parse_mode: \"Markdown\",\n            reply_markup: {\n                keyboard: keyboard,\n                one_time_keyboard: true,\n                resize_keyboard: true\n            }\n        }\n    };\n\n    return msg;\n}\n\nreturn null;\n",
+        "func": "try {\n\n    //validación del payload\n    if (!msg.payload) {\n        node.error(\"pedir modelo: msg.payload está indefinido\", msg);\n        return null;\n    }\n\n    const chatId = msg.chatId;\n\n    if (!chatId) {\n        node.error(\"pedir modelo: falta msg.chatId\", msg);\n        return null;\n    }\n\n    //texto ingresado por el usuario\n    const text = (msg.payload || \"\").toString().trim().toLowerCase();\n\n    //recuperar estado del usuario\n    let estado = flow.get(`estado_${chatId}`);\n    if (!estado || !estado.paso) {\n        node.error(`pedir modelo: estado inexistente o inválido para chatId=${chatId}`, msg);\n\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: \"⚠️ Ocurrió un problema con tu sesión. Escribí /start para reiniciar.\"\n        };\n        return msg;\n    }\n\n\n    //solo si el paso es marca\n    if (estado.paso === \"marca\") {\n\n        //obtener marcas y modelos del catálogo\n        const marcas = global.get(\"marcas_unicas\");\n        const modelosPorMarca = global.get(\"modelos_por_marca\");\n\n        //validaciones de las globales\n        if (!marcas || !Array.isArray(marcas)) {\n            node.error(\"pedir modelo: global.marcas_unicas no existe o no es array\", msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ Error interno al cargar las marcas. Probá más tarde.\"\n            };\n            return msg;\n        }\n\n        if (!modelosPorMarca || typeof modelosPorMarca !== \"object\") {\n            node.error(\"pedir modelo: global.modelos_por_marca está ausente o mal formado\", msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ Error interno al cargar los modelos. Probá más tarde.\"\n            };\n            return msg;\n        }\n\n        //buscar la marca ingresada\n        const marcaElegida = marcas.find(m =>\n            m.toLowerCase() === text ||\n            m.toLowerCase().startsWith(text)\n        );\n\n        if (!marcaElegida) {\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ No reconozco esa marca. Escribí /start para volver a empezar.\"\n            };\n            return msg;\n        }\n\n        //marcar nuevo estado\n        estado.marca = marcaElegida;\n        estado.paso = \"modelo\";\n        flow.set(`estado_${chatId}`, estado);\n\n        //obtener modelos disponibles\n        const modelos = modelosPorMarca[marcaElegida];\n\n        if (!modelos || !Array.isArray(modelos)) {\n            node.error(`pedir modelo: no hay modelos para la marca \"${marcaElegida}\"`, msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: `⚠️ No hay modelos cargados para *${marcaElegida}*.`\n            };\n            return msg;\n        }\n\n        //teclado con los primeros modelos\n        const primeras = modelos.slice(0, 8);\n\n        const keyboard = [\n            primeras.slice(0, 4).map(m => m.toUpperCase()),\n            primeras.slice(4, 8).map(m => m.toUpperCase())\n        ];\n\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `Perfecto ✅\\nElegiste *${marcaElegida.toUpperCase()}*.\\n\\nAhora decime el *modelo* del vehículo:`,\n            options: {\n                parse_mode: \"Markdown\",\n                reply_markup: {\n                    keyboard: keyboard,\n                    one_time_keyboard: true,\n                    resize_keyboard: true\n                }\n            }\n        };\n\n        return msg;\n    }\n\n    return null;\n\n} catch (err) {\n\n    //manejo de errores inesperados del sistema\n    node.error(\"pedir modelo: error inesperado → \" + err.message, msg);\n\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: \"⚠️ Se produjo un error inesperado. Escribí /start para reiniciar.\"\n    };\n    return msg;\n}\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 640,
+        "x": 1190,
+        "y": 620,
         "wires": [
             [
                 "c8423aeb93ef2a9a"
@@ -259,15 +322,15 @@
         "type": "function",
         "z": "6d76aee88f994823",
         "name": "pedir cristal",
-        "func": "const text = (msg.payload.content || \"\").toString().trim().toUpperCase();\nconst chatId = msg.payload.chatId;\nif (!chatId) return null;\n\n//recuperar el estado del usuario\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n//si está en el paso \"modelo\"\nif (estado.paso === \"modelo\") {\n\n    const modelosPorMarca = global.get(\"modelos_por_marca\") || {};\n    const marca = estado.marca;\n    const modelos = modelosPorMarca[marca] || [];\n\n    //buscar coincidencia con el modelo ingresado\n    const modeloElegido = modelos.find(m => m === text || m.startsWith(text));\n    if (!modeloElegido) {\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `❌ No reconozco ese modelo para *${marca.toUpperCase()}*.\\nProbá escribirlo de nuevo o enviá /start para comenzar otra vez.`,\n            options: { parse_mode: \"Markdown\" }\n        };\n        return msg;\n    }\n\n    //guardar el modelo\n    estado.modelo = modeloElegido;\n    estado.paso = \"cristal\";\n    flow.set(`estado_${chatId}`, estado);\n\n    //buscar tipos de cristal en el catálogo\n    const catalog = global.get(\"catalog\") || [];\n    const normalize = s => (s ?? \"\").toString().toUpperCase().normalize(\"NFD\")\n        .replace(/[\\u0300-\\u036f]/g, \"\").replace(/\\s+/g, \" \").trim();\n    const cristales = [...new Set(\n        catalog\n            .filter(x => normalize(x.marca) === marca && normalize(x.modelo) === modeloElegido)\n            .map(x => normalize(x.cristal))\n    )];\n\n    //teclado del chatbot\n    const primeros = cristales.slice(0, 6);\n    const keyboard = [\n        primeros.slice(0, 3).map(c => c.toUpperCase()),\n        primeros.slice(3, 6).map(c => c.toUpperCase())\n    ];\n\n    //mensaje del siguiente paso\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: `Perfecto ✅\\nElegiste *${marca.toUpperCase()} ${modeloElegido.toUpperCase()}*.\\n\\nAhora decime qué *cristal* buscás`,\n        options: {\n            parse_mode: \"Markdown\",\n            reply_markup: {\n                keyboard: keyboard,\n                one_time_keyboard: true,\n                resize_keyboard: true\n            }\n        }\n    };\n\n    return msg;\n}\n\nreturn null;\n",
+        "func": "try {\n\n    //validación del payload\n    if (!msg.payload) {\n        node.error(\"pedir cristal: msg.payload está indefinido\", msg);\n        return null;\n    }\n\n    const chatId = msg.chatId;\n    if (!chatId) {\n        node.error(\"pedir cristal: falta msg.chatId\", msg);\n        return null;\n    }\n\n    const text = (msg.payload || \"\").toString().trim().toUpperCase();\n\n    //recuperar estado del usuario\n    let estado = flow.get(`estado_${chatId}`);\n    if (!estado || !estado.paso) {\n        node.error(`pedir cristal: estado inválido o ausente para chatId=${chatId}`, msg);\n\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: \"⚠️ Tu sesión parece estar incompleta. Escribí /start para comenzar de nuevo.\"\n        };\n        return msg;\n    }\n\n\n    //solo si el paso es modelo\n    if (estado.paso === \"modelo\") {\n\n        const marca = estado.marca;\n        if (!marca) {\n            node.error(`pedir cristal: estado.marca no definido para chatId=${chatId}`, msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"⚠️ No encontré la marca seleccionada. Escribí /start para reiniciar.\"\n            };\n            return msg;\n        }\n\n        //obtener modelos por marca\n        const modelosPorMarca = global.get(\"modelos_por_marca\");\n        if (!modelosPorMarca || typeof modelosPorMarca !== \"object\") {\n            node.error(\"pedir cristal: global.modelos_por_marca está ausente o mal formado\", msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ Error interno al cargar modelos. Probá nuevamente más tarde.\"\n            };\n            return msg;\n        }\n\n        const modelos = modelosPorMarca[marca] || [];\n\n        //buscar modelo elegido\n        const modeloElegido = modelos.find(m => m === text || m.startsWith(text));\n        if (!modeloElegido) {\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: `❌ No reconozco ese modelo para *${marca.toUpperCase()}*.\\nProbá escribirlo de nuevo o enviá /start para comenzar otra vez.`,\n                options: { parse_mode: \"Markdown\" }\n            };\n            return msg;\n        }\n\n        //actualizar estado\n        estado.modelo = modeloElegido;\n        estado.paso = \"cristal\";\n        flow.set(`estado_${chatId}`, estado);\n\n\n        //obtener catálogo\n        const catalog = global.get(\"catalog\");\n        if (!catalog || !Array.isArray(catalog)) {\n            node.error(\"pedir cristal: global.catalog ausente o no es un array\", msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ No se pudo cargar el catálogo. Intentá más tarde.\"\n            };\n            return msg;\n        }\n\n        //normalizador seguro\n        const normalize = s => (s ?? \"\")\n            .toString()\n            .toUpperCase()\n            .normalize(\"NFD\")\n            .replace(/[\\u0300-\\u036f]/g, \"\")\n            .replace(/\\s+/g, \" \")\n            .trim();\n\n        //extraer tipos de cristal disponibles\n        const cristales = [...new Set(\n            catalog\n                .filter(x =>\n                    normalize(x.marca) === normalize(marca) &&\n                    normalize(x.modelo) === normalize(modeloElegido)\n                )\n                .map(x => normalize(x.cristal))\n        )];\n\n        if (!cristales.length) {\n            node.error(`pedir cristal: no se encontraron cristales para ${marca} ${modeloElegido}`, msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: `⚠️ No encontré cristales cargados para *${marca} ${modeloElegido}*.`,\n                options: { parse_mode: \"Markdown\" }\n            };\n            return msg;\n        }\n\n\n        //construir teclado\n        const primeros = cristales.slice(0, 6);\n        const keyboard = [\n            primeros.slice(0, 3).map(c => c.toUpperCase()),\n            primeros.slice(3, 6).map(c => c.toUpperCase())\n        ];\n\n        //mensaje siguiente\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `Perfecto ✅\\nElegiste *${marca.toUpperCase()} ${modeloElegido.toUpperCase()}*.\\n\\nAhora decime qué *cristal* buscás`,\n            options: {\n                parse_mode: \"Markdown\",\n                reply_markup: {\n                    keyboard: keyboard,\n                    one_time_keyboard: true,\n                    resize_keyboard: true\n                }\n            }\n        };\n\n        return msg;\n    }\n\n    return null;\n\n} catch (err) {\n\n    //errores inesperados\n    node.error(\"pedir cristal: error inesperado → \" + err.message, msg);\n\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: \"⚠️ Ocurrió un error inesperado. Escribí /start para reiniciar.\"\n    };\n    return msg;\n}\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 700,
+        "x": 1190,
+        "y": 680,
         "wires": [
             [
                 "c8423aeb93ef2a9a"
@@ -279,15 +342,15 @@
         "type": "function",
         "z": "6d76aee88f994823",
         "name": "buscar precios",
-        "func": "const text = (msg.payload.content || \"\").toString().trim().toUpperCase();\nconst chatId = msg.payload.chatId;\nif (!chatId) return null;\n\n//recuperar estado del usuario\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n//si está en el paso \"cristal\"\nif (estado.paso === \"cristal\") {\n\n    const marca = estado.marca;\n    const modelo = estado.modelo;\n    const cristalIngresado = text;\n\n    //normalizar texto para comparar\n    const normalize = s => (s ?? \"\").toString().toUpperCase()\n        .normalize(\"NFD\")\n        .replace(/[\\u0300-\\u036f]/g, \"\")\n        .replace(/\\s+/g, \" \")\n        .trim();\n\n    const catalog = global.get(\"catalog\") || [];\n\n    //filtrar coincidencias\n    const resultados = catalog.filter(item => {\n        return (\n            normalize(item.marca) === marca &&\n            normalize(item.modelo) === modelo &&\n            normalize(item.cristal).startsWith(cristalIngresado)\n        );\n    });\n\n    if (!resultados.length) {\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `❌ No encontré precios para *${marca.toUpperCase()} ${modelo.toUpperCase()}* (${cristalIngresado}).\\nProbá otra pieza o enviá /start para comenzar de nuevo.`,\n            options: { parse_mode: \"Markdown\" }\n        };\n        return msg;\n    }\n\n    //formatear resultados\n    const fmt = v => {\n        if (v === undefined || v === null) return \"-\";\n        let s = v.toString().trim();\n        if (!s.startsWith(\"$\")) s = \"$\" + s;\n        return s;\n    };\n\n    const respuesta = resultados.slice(0, 5).map((r, i) => {\n        const precio = fmt(r[\"total s/iva\"] ?? r[\"precio s/iva\"] ?? r[\"precio\"]);\n        return `#${i + 1} – ${r.descripción ?? r.cristal}\\nCódigo: ${r.código ?? \"-\"}\\nColor: ${r.color ?? \"-\"}\\n💵 Precio: ${precio}`;\n    }).join(\"\\n\\n\");\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: `🔍 *Resultados para ${marca.toUpperCase()} ${modelo.toUpperCase()} (${cristalIngresado.toUpperCase()})*\\n\\n${respuesta}\\n\\nUsá /start para hacer otra consulta.`,\n        options: { parse_mode: \"Markdown\" }\n    };\n\n    //reiniciar la sesión para que pueda empezar otra consulta\n    flow.set(`estado_${chatId}`, { paso: null });\n    return msg;\n}\n\nreturn null;\n",
+        "func": "try {\n\n    //validación del payload\n    if (!msg.payload) {\n        node.error(\"buscar precios: msg.payload está indefinido\", msg);\n        return null;\n    }\n\n    const chatId = msg.chatId;\n    if (!chatId) {\n        node.error(\"buscar precios: falta msg.chatId\", msg);\n        return null;\n    }\n\n    const text = (msg.payload || \"\").toString().trim().toUpperCase();\n\n    //recuperar estado del usuario\n    let estado = flow.get(`estado_${chatId}`);\n    if (!estado || !estado.paso) {\n        node.error(`buscar precios: estado inválido o ausente para chatId=${chatId}`, msg);\n\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: \"⚠️ Tu sesión no está completa. Escribí /start para reiniciar.\"\n        };\n        return msg;\n    }\n\n\n    //solo si el paso es cristal\n    if (estado.paso === \"cristal\") {\n\n        const marca = estado.marca;\n        const modelo = estado.modelo;\n\n        //validaciones del estado\n        if (!marca) {\n            node.error(`buscar precios: estado.marca no definido para chatId=${chatId}`, msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"⚠️ No encontré la marca seleccionada. Usá /start para comenzar de nuevo.\"\n            };\n            return msg;\n        }\n\n        if (!modelo) {\n            node.error(`buscar precios: estado.modelo no definido para chatId=${chatId}`, msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"⚠️ No encontré el modelo seleccionado. Usá /start para comenzar de nuevo.\"\n            };\n            return msg;\n        }\n\n\n        //normalizador\n        const normalize = s => (s ?? \"\")\n            .toString()\n            .toUpperCase()\n            .normalize(\"NFD\")\n            .replace(/[\\u0300-\\u036f]/g, \"\")\n            .replace(/\\s+/g, \" \")\n            .trim();\n\n\n        //obtener catálogo\n        const catalog = global.get(\"catalog\");\n        if (!catalog || !Array.isArray(catalog)) {\n            node.error(\"buscar precios: global.catalog ausente o no es array\", msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ No pude acceder al catálogo. Probá nuevamente más tarde.\"\n            };\n            return msg;\n        }\n\n\n        //buscar coincidencias\n        const cristalIngresado = text;\n\n        const resultados = catalog.filter(item => {\n            //validación defensiva del item\n            if (!item || typeof item !== \"object\") {\n                node.error(`buscar precios: item inválido en catálogo → ${JSON.stringify(item)}`, msg);\n                return false;\n            }\n\n            return (\n                normalize(item.marca) === normalize(marca) &&\n                normalize(item.modelo) === normalize(modelo) &&\n                normalize(item.cristal).startsWith(cristalIngresado)\n            );\n        });\n\n        if (!resultados.length) {\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: `❌ No encontré precios para *${marca.toUpperCase()} ${modelo.toUpperCase()}* (${cristalIngresado}).\\nProbá otra pieza o enviá /start para comenzar de nuevo.`,\n                options: { parse_mode: \"Markdown\" }\n            };\n            return msg;\n        }\n\n        const fmt = v => {\n            if (v === undefined || v === null || v === \"\") return \"-\";\n\n            let s = v.toString().trim();\n\n            if (!s.startsWith(\"$\")) s = \"$\" + s;\n\n            return s;\n        };\n\n\n        //construcción de respuesta\n        const respuesta = resultados.slice(0, 5).map((r, i) => {\n\n            const descripcion = r.descripción ?? r.cristal ?? \"(Sin descripción)\";\n            const codigo = r.código ?? \"-\";\n            const color = r.color ?? \"-\";\n            const precio = fmt(\n                r[\"total s/iva\"] ??\n                r[\"precio s/iva\"] ??\n                r[\"precio\"]\n            );\n\n            return `#${i + 1} – ${descripcion}\nCódigo: ${codigo}\nColor: ${color}\n💵 Precio: ${precio}`;\n\n        }).join(\"\\n\\n\");\n\n\n        //enviar mensaje\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: `🔍 *Resultados para ${marca.toUpperCase()} ${modelo.toUpperCase()} (${cristalIngresado.toUpperCase()})*\\n\\n${respuesta}\\n\\nUsá /start para hacer otra consulta.`,\n            options: { parse_mode: \"Markdown\" }\n        };\n\n\n        //reiniciar estado para nueva consulta\n        flow.set(`estado_${chatId}`, { paso: null });\n\n        return msg;\n    }\n\n    return null;\n\n\n} catch (err) {\n\n    //errores inesperados\n    node.error(\"buscar precios: error inesperado → \" + err.message, msg);\n\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: \"⚠️ Ocurrió un error inesperado al buscar precios. Escribí /start para reiniciar.\"\n    };\n\n    return msg;\n}\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 860,
-        "y": 760,
+        "x": 1180,
+        "y": 740,
         "wires": [
             [
                 "c8423aeb93ef2a9a"
@@ -299,7 +362,7 @@
         "type": "function",
         "z": "6d76aee88f994823",
         "name": "router inputs",
-        "func": "const text = (msg.payload.content || \"\").toString().trim().toLowerCase();\nconst chatId = msg.payload.chatId;\n\nif (!chatId) return null;\n\nlet estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n//dectectar comandos\nif (text.startsWith(\"/start\") || text.startsWith(\"/ayuda\") || text.startsWith(\"/cancel\")) {\n    msg.meta = { tipo: \"comando\", comando: text.replace(\"/\", \"\") };\n    return [msg, null]; // salida 1\n}\n\n//mensajes normales\nmsg.meta = { tipo: \"mensaje\", paso: estado.paso };\nreturn [null, msg]; // salida 2",
+        "func": "try {\n\n    //validación mínima del payload\n    if (!msg.payload) {\n        node.error(\"router inputs: msg.payload está indefinido\", msg);\n        return [null, null];\n    }\n\n    const chatId = msg.payload.chatId;\n\n    //chatId obligatorio\n    if (!chatId) {\n        node.error(\"router inputs: falta msg.payload.chatId\", msg);\n        return [null, null];\n    }\n\n    //normalizar texto, pero validando antes\n    const content = msg.payload.content;\n    if (content === undefined || content === null) {\n        node.error(`router inputs: msg.payload.content no existe (chatId=${chatId})`, msg);\n        return [null, null];\n    }\n\n    const text = content.toString().trim().toLowerCase();\n\n    //recuperar estado del usuario\n    let estado = flow.get(`estado_${chatId}`) || { paso: null };\n\n    //variables originales para subflujos posteriores\n    msg.chatId = chatId;\n    msg.text_original = content;\n\n    //detectar comandos\n    if (\n        text.startsWith(\"/start\") ||\n        text.startsWith(\"/ayuda\") ||\n        text.startsWith(\"/cancel\")\n    ) {\n        msg.meta = { tipo: \"comando\", comando: text.replace(\"/\", \"\") };\n        return [msg, null]; // salida comandos\n    }\n\n    //mensajes normales\n    msg.meta = { tipo: \"mensaje\", paso: estado.paso };\n    return [null, msg]; // salida mensajes normales\n\n} catch (err) {\n\n    //errores inesperados\n    node.error(\"router inputs: error inesperado → \" + err.message, msg);\n\n    return [null, null];\n}\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -313,8 +376,7 @@
                 "82c275f0d94cc151"
             ],
             [
-                "88f1d6b3578b6dde",
-                "3da87555ec18b64c"
+                "b13d790a754ae6fc"
             ]
         ]
     },
@@ -345,8 +407,8 @@
         "checkall": "true",
         "repair": false,
         "outputs": 3,
-        "x": 590,
-        "y": 700,
+        "x": 850,
+        "y": 680,
         "wires": [
             [
                 "d16fdcf0d9f4353c"
@@ -364,14 +426,14 @@
         "type": "function",
         "z": "6d76aee88f994823",
         "name": "gestor comandos",
-        "func": "const cmd = msg.meta?.comando;\nconst chatId = msg.payload.chatId;\n\nif (cmd === \"start\") {\n    //reiniciar estado del usuario\n    flow.set(`estado_${chatId}`, { paso: \"marca\" });\n\n    //obtener las marcas de la variable global\n    const marcas = global.get(\"marcas_unicas\") || [];\n    \n    //seleccionar cierto rango de marcas\n    const primeras = marcas.slice(5, 15);\n\n    //crear la estructura del teclado\n    const keyboard = [\n        primeras.slice(0, 4).map(m => m.toUpperCase()), // Fila 1\n        primeras.slice(4, 8).map(m => m.toUpperCase())  // Fila 2\n    ];\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: \"👋 ¡Hola! Soy tu asistente de precios de Pilkington.\\n\\nIngresá la *marca* del vehículo:\",\n        options: {\n            parse_mode: \"Markdown\",\n            \n            //djuntar el teclado al mensaje\n            reply_markup: {\n                keyboard: keyboard,\n                one_time_keyboard: true,\n                resize_keyboard: true\n            }\n        }\n    };\n\n    return msg;\n}\n\nif (cmd === \"ayuda\") {\n\n    const textoAyuda = `*🤖 ¿Cómo usar este Asistente?*\n\nEste bot te ayuda a encontrar precios de cristales para vehículos. El flujo es simple:\n\n1️⃣  Primero, te pediré la *Marca* (ej: Ford).\n2️⃣  Luego, te pediré el *Modelo* (ej: Fiesta).\n3️⃣  Finalmente, te pediré el *Cristal* (ej: Parabrisas).\n\nCon esa información, buscaré el precio en nuestro catálogo.\n\n*Comandos Disponibles:*\n*Comandos Disponibles:*\n* \\`/start\\` - Inicia una nueva consulta o reinicia la actual.\n* \\`/ayuda\\` - Muestra este mensaje.`; \n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: textoAyuda,\n        options: {\n            parse_mode: \"Markdown\"\n        }\n    };\n\n    return msg;\n}\nreturn null;",
+        "func": "try {\n\n    //validaciones básicas\n    if (!msg.payload) {\n        node.error(\"gestor comandos: msg.payload está indefinido\", msg);\n        return null;\n    }\n\n    const chatId = msg.payload.chatId;\n\n    if (!chatId) {\n        node.error(\"gestor comandos: falta msg.payload.chatId\", msg);\n        return null;\n    }\n\n    if (!msg.meta || !msg.meta.comando) {\n        node.error(`gestor comandos: comando no encontrado en msg.meta (chatId=${chatId})`, msg);\n        return null;\n    }\n\n    const cmd = msg.meta.comando;\n\n    if (cmd === \"start\") {\n\n        //reiniciar estado del usuario\n        flow.set(`estado_${chatId}`, { paso: \"marca\" });\n\n        //obtener marcas del catálogo\n        const marcas = global.get(\"marcas_unicas\");\n\n        if (!marcas || !Array.isArray(marcas)) {\n            node.error(\"gestor comandos: global.marcas_unicas no existe o no es un array\", msg);\n\n            msg.payload = {\n                chatId,\n                type: \"message\",\n                content: \"❌ Error interno: no se pudo cargar la lista de marcas. Probá más tarde.\"\n            };\n\n            return msg;\n        }\n\n        //función para capitalizar\n        const capitalize = s =>\n            (!s ? \"\" : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());\n\n        const primeras = marcas.slice(5, 15);\n\n        const keyboard = [\n            primeras.slice(0, 4).map(m => capitalize(m)),\n            primeras.slice(4, 8).map(m => capitalize(m))\n        ];\n\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: \"👋 ¡Hola! Soy tu asistente de precios de Pilkington.\\n\\nIngresá la *marca* del vehículo:\",\n            options: {\n                parse_mode: \"Markdown\",\n                reply_markup: {\n                    keyboard: keyboard,\n                    one_time_keyboard: true,\n                    resize_keyboard: true\n                }\n            }\n        };\n\n        return msg;\n    }\n\n    if (cmd === \"ayuda\") {\n\n        const textoAyuda =\n            `*🤖 ¿Cómo usar este Asistente?*\n\nEste bot te ayuda a encontrar precios de cristales para vehículos. El flujo es simple:\n\n1️⃣ Primero, te pediré la *Marca* (ej: Ford).  \n2️⃣ Luego, te pediré el *Modelo* (ej: Fiesta).  \n3️⃣ Finalmente, te pediré el *Cristal* (ej: Parabrisas).  \n\nCon esa información, buscaré el precio en nuestro catálogo.\n\n*Comandos Disponibles:*  \n• /start - Inicia una nueva consulta o reinicia la actual.  \n• /ayuda - Muestra este mensaje.`;\n\n        msg.payload = {\n            chatId,\n            type: \"message\",\n            content: textoAyuda,\n            options: {\n                parse_mode: \"Markdown\"\n            }\n        };\n\n        return msg;\n    }\n\n    node.error(`gestor comandos: comando desconocido \"${cmd}\"`, msg);\n\n    msg.payload = {\n        chatId,\n        type: \"message\",\n        content: \"❓ Comando no reconocido. Usá /start o /ayuda.\"\n    };\n\n    return msg;\n\n\n} catch (err) {\n\n    //error inesperado\n    node.error(`gestor comandos: error inesperado → ${err.message}`, msg);\n\n    msg.payload = {\n        chatId: msg.payload?.chatId,\n        type: \"message\",\n        content: \"⚠️ Ocurrió un error interno procesando tu comando.\"\n    };\n\n    return msg;\n}\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
+        "x": 1170,
         "y": 560,
         "wires": [
             [
@@ -380,20 +442,51 @@
         ]
     },
     {
-        "id": "3da87555ec18b64c",
-        "type": "debug",
+        "id": "b13d790a754ae6fc",
+        "type": "subflow:subflow_normalizar",
         "z": "6d76aee88f994823",
-        "name": "salida mensajes usuario",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 610,
-        "y": 820,
-        "wires": []
+        "name": "",
+        "x": 600,
+        "y": 680,
+        "wires": [
+            [
+                "88f1d6b3578b6dde"
+            ]
+        ]
+    },
+    {
+        "id": "7df1eb0dedc00bc5",
+        "type": "catch",
+        "z": "6d76aee88f994823",
+        "name": "Capturador de errores",
+        "scope": null,
+        "uncaught": false,
+        "x": 860,
+        "y": 840,
+        "wires": [
+            [
+                "8246547d45e16c3e"
+            ]
+        ]
+    },
+    {
+        "id": "8246547d45e16c3e",
+        "type": "function",
+        "z": "6d76aee88f994823",
+        "name": "Formateador de errores",
+        "func": "// El nodo Catch entrega el error en msg.error o msg.payload\nconst err = msg.error || msg.payload;\n\n//obtener info del error\nconst errorMessage = err?.message || \"Error desconocido\";\nconst source = err?.source || {};\nconst nodoNombre = source.name || \"Nodo sin nombre\";\nconst nodoId = source.id || \"sin-id\";\nconst nodoTipo = source.type || \"desconocido\";\n\n// Obtener chatId si estaba en el msg original, si no agarra el fijo\nconst chatId = msg.chatId || err?.source?.chatId || 5810645399;\n\n//mensaje para Telegram\nmsg.payload = {\n    chatId,\n    type: \"message\",\n    content:\n        `⚠️ *ERROR DETECTADO*\n\n*Mensaje:* ${errorMessage}\n*Nodo:* ${nodoNombre}\n*Tipo:* ${nodoTipo}\n*ID:* ${nodoId}\n\n_Revisá los logs y corregí el flujo._`,\n    options: { parse_mode: \"Markdown\" }\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1170,
+        "y": 840,
+        "wires": [
+            [
+                "c8423aeb93ef2a9a"
+            ]
+        ]
     }
 ]
