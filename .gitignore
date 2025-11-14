@@ -1,9 +1,17 @@
+# Backups
 *.backup
-*__pycache__/
-*./scripts/README.md/
+
+# Carpetas de Python
+__pycache__/
+*.pyc
+
+# Carpeta de archivos archivados
 archive/
-*.scripts/pdf_extractor.py/
-*.scripts/col_config.py/
-*.test/test_column_mapper.py/
-*.test/test_pdf_excractor_advanced.py/
-*.test/test_pdf_extractor.py/
+
+# Archivos específicos
+scripts/pdf_extractor.py
+scripts/col_config.py
+
+test/test_column_mapper.py
+test/test_pdf_excractor_advanced.py
+test/test_pdf_extractor.py
