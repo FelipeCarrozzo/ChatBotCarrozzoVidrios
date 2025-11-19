@@ -1,0 +1,212 @@
+[
+  {
+    "tipo": "FLOAT",
+    "espesor": "2mm",
+    "precio": "21493"
+  },
+    {
+        "tipo": "FLOAT",
+        "espesor": "3mm",
+        "precio": "25824"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Incoloro",
+        "espesor": "4mm",
+        "precio": "32045"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Incoloro",
+        "espesor": "5mm",
+        "precio": "$41095"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Incoloro",
+        "espesor": "6mm",
+        "precio": "52030"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Incoloro",
+        "espesor": "8mm",
+        "precio": "70000"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Incoloro",
+        "espesor": "10mm",
+        "precio": "90800"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Color",
+        "espesor": "3mm",
+        "precio": "38300"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Color",
+        "espesor": "4mm",
+        "precio": "50000"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Color",
+        "espesor": "5mm",
+        "precio": "61300"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Color",
+        "espesor": "6mm",
+        "precio": "75000"
+    },
+    {
+        "tipo": "FLOAT",
+        "color": "Color",
+        "espesor": "10mm",
+        "precio": "127500"
+    },
+    
+    {
+        "tipo": "ESPEJO",
+        "color": "Incoloro",
+        "espesor": "2mm",
+        "precio": "47800"
+    },
+    {
+        "tipo": "ESPEJO",
+        "color": "Incoloro",
+        "espesor": "3mm",
+        "precio": "55750"
+    },
+    {
+        "tipo": "ESPEJO",
+        "color": "Incoloro",
+        "espesor": "4mm",
+        "precio": "67200"
+    },
+    {
+        "tipo": "ESPEJO",
+        "color": "Incoloro",
+        "espesor": "5mm",
+        "precio": "76900"
+    },
+    {
+        "tipo": "ESPEJO",
+        "color": "Incoloro",
+        "espesor": "6mm",
+        "precio": "87200"
+    },
+    {
+        "tipo": "ESPEJO",
+        "color": "Color",
+        "espesor": "4mm",
+        "precio": "77300"
+    },
+    {
+        "tipo": "OPACID",
+        "color": "Incoloro",
+        "espesor": "4mm",
+        "precio": "115400"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Incoloro",
+        "espesor": "3+3",
+        "precio": "93600"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Incoloro",
+        "espesor": "4+4",
+        "precio": "116900"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Incoloro",
+        "espesor": "5+5",
+        "precio": "140500"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Incoloro",
+        "espesor": "6+6",
+        "precio": "156600"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "gris/bronce claro",
+        "espesor": "3+3",
+        "precio": "119800"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "gris/bronce claro",
+        "espesor": "4+4",
+        "precio": "142500"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "gris/bronce claro",
+        "espesor": "5+5",
+        "precio": "170600"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "gris/bronce oscuro",
+        "espesor": "3+3",
+        "precio": "136600"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "gris/bronce oscuro",
+        "espesor": "4+4",
+        "precio": "171800"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "gris/bronce oscuro",
+        "espesor": "5+5",
+        "precio": "193600"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Arquitectura",
+        "espesor": "3+3",
+        "precio": "181300"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Esmerilado",
+        "espesor": "3+3",
+        "precio": "163600"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Esmerilado",
+        "espesor": "4+4",
+        "precio": "181000"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Stopsol",
+        "espesor": "4",
+        "precio": "139400"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Stopsol",
+        "espesor": "6",
+        "precio": "210300"
+    },
+    {
+        "tipo": "LAMINADO",
+        "color": "Difuso",
+        "espesor": "",
+        "precio": "21300"
+    }
+
+]
