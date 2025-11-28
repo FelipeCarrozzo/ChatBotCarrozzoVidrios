@@ -145,7 +145,7 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 200,
+        "x": 400,
         "y": 200,
         "wires": [
             [
@@ -165,7 +165,7 @@
         "sendError": false,
         "encoding": "none",
         "allProps": false,
-        "x": 410,
+        "x": 610,
         "y": 200,
         "wires": [
             [
@@ -181,7 +181,7 @@
         "property": "payload",
         "action": "",
         "pretty": false,
-        "x": 590,
+        "x": 790,
         "y": 200,
         "wires": [
             [
@@ -201,12 +201,11 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 790,
+        "x": 990,
         "y": 200,
         "wires": [
             [
-                "b6be091188b8e890",
-                "1ed20e756ff9133c"
+                "b6be091188b8e890"
             ]
         ]
     },
@@ -222,30 +221,11 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1070,
+        "x": 1270,
         "y": 200,
         "wires": [
-            [
-                "0c5521db7efc2f6e"
-            ]
+            []
         ]
-    },
-    {
-        "id": "0c5521db7efc2f6e",
-        "type": "debug",
-        "z": "6d76aee88f994823",
-        "name": "salida marcas y modelos",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1110,
-        "y": 280,
-        "wires": []
     },
     {
         "id": "c8423aeb93ef2a9a",
@@ -348,7 +328,7 @@
         "id": "88f1d6b3578b6dde",
         "type": "switch",
         "z": "6d76aee88f994823",
-        "name": "orquestador",
+        "name": "router operaciones",
         "property": "meta.paso",
         "propertyType": "msg",
         "rules": [
@@ -371,7 +351,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 3,
-        "x": 850,
+        "x": 870,
         "y": 820,
         "wires": [
             [
@@ -454,29 +434,12 @@
         ]
     },
     {
-        "id": "1ed20e756ff9133c",
-        "type": "debug",
-        "z": "6d76aee88f994823",
-        "name": "debug 1",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1060,
-        "y": 340,
-        "wires": []
-    },
-    {
         "id": "9dec0bc6ecb81167",
         "type": "comment",
         "z": "6d76aee88f994823",
         "name": "Carga de datos",
         "info": "### Carga el catálogo de productos desde un archivo JSON y prepara la información necesaria para las búsquedas.\n\nIncluye:\n\n- Lectura del archivo con el catálogo Pilkington.\n- Conversión del contenido a JSON.\n- Almacenamiento del catálogo completo en global.catalogo.productos.\n\nExtracción y normalización de:\n- Lista de marcas → global.catalogo.marcas\n- Modelos por marca → global.catalogo.modelos",
-        "x": 180,
+        "x": 380,
         "y": 140,
         "wires": []
     },
@@ -496,7 +459,7 @@
         "z": "6d76aee88f994823",
         "name": "Switch",
         "info": "### Nodo switch responsable de decidir qué función ejecutar según el progreso del usuario.\n\nRecibe:\nmsg.meta.paso → puede ser:\n\n- \"marca\"\n\n- \"modelo\"\n\n- \"cristal\"\n\nRutea hacia:\n\n- pedir modelo\n\n- pedir cristal\n\n- buscar precios",
-        "x": 850,
+        "x": 870,
         "y": 760,
         "wires": []
     },
