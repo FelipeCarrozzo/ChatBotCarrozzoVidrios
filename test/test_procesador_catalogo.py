@@ -1,12 +1,11 @@
+#dependencias
 import unittest
 from unittest.mock import mock_open, patch
-
 import pandas as pd
-
 from scripts.catalog_processor import CatalogProcessor, ExcelCatalogProcessor
 
-
 class DummyCatalogProcessor(CatalogProcessor):
+    """Implementación dummy para pruebas unitarias."""
     def extract(self):
         return pd.DataFrame()
 
@@ -15,6 +14,7 @@ class DummyCatalogProcessor(CatalogProcessor):
 
 
 class TestCatalogProcessorBase(unittest.TestCase):
+    """Pruebas unitarias para la clase base CatalogProcessor."""
     def setUp(self):
         self.processor = DummyCatalogProcessor("dummy.xlsx")
 
@@ -34,6 +34,7 @@ class TestCatalogProcessorBase(unittest.TestCase):
 
 
 class TestExcelCatalogProcessor(unittest.TestCase):
+    """Pruebas unitarias para ExcelCatalogProcessor."""
     def setUp(self):
         self.processor = ExcelCatalogProcessor("fake.xlsx")
 
