@@ -36,6 +36,15 @@ Node-RED procesa la consulta, filtra el catálogo y devuelve información clave:
 
 El sistema está diseñado con un enfoque modular, escalable y simple de mantener.
 
+## Tecnologías utilizadas
+
+- Node-RED – Desarrollo de flujos y lógica conversacional.
+- JavaScript (Node.js) – Procesamiento de mensajes y validaciones.
+- Python – Transformación de datos (Excel → JSON).
+- Telegram Bot API – Comunicación con usuarios.
+- JSON – Almacenamiento estructurado.
+- Git & GitHub – Control de versiones.
+
 ---
 
 ## Cómo ejecutar el proyecto
