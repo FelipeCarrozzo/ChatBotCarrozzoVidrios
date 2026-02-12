@@ -27,9 +27,8 @@ class CatalogProcessor(ABC):
         """Convierte el catálogo procesado en un JSON con estructura estandarizada."""
         pass
 
-
-
 class ExcelCatalogProcessor(CatalogProcessor):
+    """Clase procesadora del catálogo."""
     def __init__(self, path: str, sheet_name: str | int | None = 0, header_row: int = 1):
         """
         Inicializa el procesador de catálogos Excel.
